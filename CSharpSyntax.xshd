@@ -1,26 +1,20 @@
 <?xml version="1.0"?>
-<SyntaxDefinition name="C#" extensions=".cs"
+<SyntaxDefinition name="CustomLang" extensions=".cl"
                   xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
 
   <Color name="Comment"       foreground="#6A9955" fontStyle="italic"/>
   <Color name="String"        foreground="#CE9178"/>
   <Color name="Char"          foreground="#CE9178"/>
-  <Color name="Preprocessor"  foreground="#C586C0"/>
   <Color name="Keyword"       foreground="#569CD6" fontWeight="bold"/>
   <Color name="ControlFlow"   foreground="#C586C0" fontWeight="bold"/>
-  <Color name="TypeKeyword"   foreground="#4EC9B0"/>
-  <Color name="ValueType"     foreground="#569CD6"/>
+  <Color name="TypeKeyword"   foreground="#4EC9B0" fontWeight="bold"/>
+  <Color name="AccessMod"     foreground="#569CD6"/>
+  <Color name="Boolean"       foreground="#569CD6"/>
+  <Color name="CustomKeyword" foreground="#DCDCAA" fontWeight="bold"/>
   <Color name="NumberLiteral" foreground="#B5CEA8"/>
   <Color name="Punctuation"   foreground="#D4D4D4"/>
-  <Color name="MethodCall"    foreground="#DCDCAA"/>
-  <Color name="Attribute"     foreground="#4EC9B0"/>
 
   <RuleSet ignoreCase="false">
-
-    <!-- Single-line doc comment -->
-    <Span color="Comment">
-      <Begin>///</Begin>
-    </Span>
 
     <!-- Single-line comment -->
     <Span color="Comment">
@@ -33,25 +27,7 @@
       <End>\*/</End>
     </Span>
 
-    <!-- Verbatim string -->
-    <Span color="String" multiline="true">
-      <Begin>@"</Begin>
-      <End>"</End>
-      <RuleSet>
-        <Span begin='""' end=""/>
-      </RuleSet>
-    </Span>
-
-    <!-- Interpolated string -->
-    <Span color="String">
-      <Begin>\$"</Begin>
-      <End>"</End>
-      <RuleSet>
-        <Span begin="\\" end=""/>
-      </RuleSet>
-    </Span>
-
-    <!-- Regular string -->
+    <!-- String literal -->
     <Span color="String">
       <Begin>"</Begin>
       <End>"</End>
@@ -60,7 +36,7 @@
       </RuleSet>
     </Span>
 
-    <!-- Character literal -->
+    <!-- Char literal -->
     <Span color="Char">
       <Begin>'</Begin>
       <End>'</End>
@@ -69,143 +45,62 @@
       </RuleSet>
     </Span>
 
-    <!-- Preprocessor -->
-    <Span color="Preprocessor">
-      <Begin>\#</Begin>
-    </Span>
-
-    <!-- Attributes -->
-    <Span color="Attribute">
-      <Begin>\[</Begin>
-      <End>\]</End>
-    </Span>
-
     <!-- Number literals -->
     <Rule color="NumberLiteral">
-      \b0[xX][0-9a-fA-F]+[uUlL]*\b |
-      \b[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?[fFdDmM]?\b
+      \b[0-9]+(\.[0-9]+)?\b
     </Rule>
+
+    <!-- Custom language keywords (herdar, assinar, agilizador, igor, error) -->
+    <Keywords color="CustomKeyword">
+      <Word>herdar</Word>
+      <Word>assinar</Word>
+      <Word>agilizador</Word>
+      <Word>igor</Word>
+      <Word>error</Word>
+      <Word>main</Word>
+    </Keywords>
 
     <!-- Control flow keywords -->
     <Keywords color="ControlFlow">
       <Word>if</Word>
       <Word>else</Word>
+      <Word>for</Word>
+      <Word>while</Word>
       <Word>switch</Word>
       <Word>case</Word>
-      <Word>default</Word>
-      <Word>for</Word>
-      <Word>foreach</Word>
-      <Word>while</Word>
-      <Word>do</Word>
       <Word>break</Word>
       <Word>continue</Word>
       <Word>return</Word>
-      <Word>yield</Word>
-      <Word>throw</Word>
-      <Word>try</Word>
-      <Word>catch</Word>
-      <Word>finally</Word>
-      <Word>goto</Word>
-      <Word>await</Word>
+      <Word>import</Word>
+      <Word>new</Word>
     </Keywords>
 
     <!-- Type keywords -->
     <Keywords color="TypeKeyword">
-      <Word>class</Word>
-      <Word>struct</Word>
-      <Word>interface</Word>
-      <Word>enum</Word>
-      <Word>delegate</Word>
-      <Word>record</Word>
-      <Word>namespace</Word>
-      <Word>var</Word>
-      <Word>dynamic</Word>
-    </Keywords>
-
-    <!-- Value type keywords -->
-    <Keywords color="ValueType">
-      <Word>bool</Word>
-      <Word>byte</Word>
-      <Word>sbyte</Word>
-      <Word>char</Word>
-      <Word>decimal</Word>
-      <Word>double</Word>
-      <Word>float</Word>
       <Word>int</Word>
-      <Word>uint</Word>
-      <Word>long</Word>
-      <Word>ulong</Word>
-      <Word>short</Word>
-      <Word>ushort</Word>
+      <Word>double</Word>
+      <Word>boolean</Word>
       <Word>string</Word>
-      <Word>object</Word>
       <Word>void</Word>
-      <Word>nint</Word>
-      <Word>nuint</Word>
+      <Word>var</Word>
+      <Word>class</Word>
     </Keywords>
 
-    <!-- General keywords -->
-    <Keywords color="Keyword">
-      <Word>abstract</Word>
-      <Word>as</Word>
-      <Word>async</Word>
-      <Word>base</Word>
-      <Word>checked</Word>
-      <Word>const</Word>
-      <Word>event</Word>
-      <Word>explicit</Word>
-      <Word>extern</Word>
-      <Word>fixed</Word>
-      <Word>implicit</Word>
-      <Word>in</Word>
-      <Word>internal</Word>
-      <Word>is</Word>
-      <Word>lock</Word>
-      <Word>new</Word>
-      <Word>null</Word>
-      <Word>operator</Word>
-      <Word>out</Word>
-      <Word>override</Word>
-      <Word>params</Word>
-      <Word>partial</Word>
-      <Word>private</Word>
-      <Word>protected</Word>
+    <!-- Access modifiers -->
+    <Keywords color="AccessMod">
       <Word>public</Word>
-      <Word>readonly</Word>
-      <Word>ref</Word>
-      <Word>sealed</Word>
-      <Word>sizeof</Word>
-      <Word>stackalloc</Word>
-      <Word>static</Word>
-      <Word>this</Word>
+      <Word>private</Word>
+    </Keywords>
+
+    <!-- Boolean literals -->
+    <Keywords color="Boolean">
       <Word>true</Word>
       <Word>false</Word>
-      <Word>typeof</Word>
-      <Word>unchecked</Word>
-      <Word>unsafe</Word>
-      <Word>using</Word>
-      <Word>virtual</Word>
-      <Word>volatile</Word>
-      <Word>where</Word>
-      <Word>when</Word>
-      <Word>global</Word>
-      <Word>required</Word>
-      <Word>init</Word>
-      <Word>get</Word>
-      <Word>set</Word>
-      <Word>value</Word>
-      <Word>add</Word>
-      <Word>remove</Word>
-      <Word>nameof</Word>
-      <Word>with</Word>
-      <Word>not</Word>
-      <Word>and</Word>
-      <Word>or</Word>
     </Keywords>
 
     <!-- Punctuation -->
     <Rule color="Punctuation">
-      [{}()\[\];,.:?]
+      [{}()\[\];,\.:]
     </Rule>
 
   </RuleSet>

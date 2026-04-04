@@ -1,8 +1,9 @@
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Xml;
+using CSharpEditor.Compiler;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Microsoft.Win32;
@@ -12,29 +13,40 @@ namespace CSharpEditor;
 public partial class MainWindow : Window
 {
     private string? _currentFilePath;
-    private Process? _runningProcess;
-    private CancellationTokenSource? _cts;
-
-    private static readonly string TempProjectDir =
-        Path.Combine(Path.GetTempPath(), "CSharpEditorTemp");
 
     public MainWindow()
     {
         InitializeComponent();
         LoadSyntaxHighlighting();
         SetDefaultCode();
+        RegisterKeyBindings();
+    }
+
+    private void RegisterKeyBindings()
+    {
+        CommandBindings.Add(new CommandBinding(
+            new RoutedCommand("LexicalAnalysis", typeof(MainWindow),
+                new InputGestureCollection { new KeyGesture(Key.F5) }),
+            (_, _) => BtnLexical_Click(this, new RoutedEventArgs())));
 
         CommandBindings.Add(new CommandBinding(
-            new RoutedCommand("Run", typeof(MainWindow), new InputGestureCollection { new KeyGesture(Key.F5) }),
-            (_, _) => BtnRun_Click(this, new RoutedEventArgs())));
+            new RoutedCommand("SemanticAnalysis", typeof(MainWindow),
+                new InputGestureCollection { new KeyGesture(Key.F6) }),
+            (_, _) => BtnSemantic_Click(this, new RoutedEventArgs())));
+
         CommandBindings.Add(new CommandBinding(
-            new RoutedCommand("Save", typeof(MainWindow), new InputGestureCollection { new KeyGesture(Key.S, ModifierKeys.Control) }),
+            new RoutedCommand("Save", typeof(MainWindow),
+                new InputGestureCollection { new KeyGesture(Key.S, ModifierKeys.Control) }),
             (_, _) => BtnSave_Click(this, new RoutedEventArgs())));
+
         CommandBindings.Add(new CommandBinding(
-            new RoutedCommand("Open", typeof(MainWindow), new InputGestureCollection { new KeyGesture(Key.O, ModifierKeys.Control) }),
+            new RoutedCommand("Open", typeof(MainWindow),
+                new InputGestureCollection { new KeyGesture(Key.O, ModifierKeys.Control) }),
             (_, _) => BtnOpen_Click(this, new RoutedEventArgs())));
+
         CommandBindings.Add(new CommandBinding(
-            new RoutedCommand("New", typeof(MainWindow), new InputGestureCollection { new KeyGesture(Key.N, ModifierKeys.Control) }),
+            new RoutedCommand("New", typeof(MainWindow),
+                new InputGestureCollection { new KeyGesture(Key.N, ModifierKeys.Control) }),
             (_, _) => BtnNew_Click(this, new RoutedEventArgs())));
     }
 
@@ -50,21 +62,48 @@ public partial class MainWindow : Window
 
     private void SetDefaultCode()
     {
-        CodeEditor.Text = """
-            using System;
+        CodeEditor.Text =
+@"// Exemplo de código da linguagem
+import utils;
 
-            namespace MeuPrograma
-            {
-                class Program
-                {
-                    static void Main(string[] args)
-                    {
-                        Console.WriteLine("Olá, mundo!");
-                        Console.WriteLine("Bem-vindo ao C# Code Editor!");
-                    }
-                }
-            }
-            """;
+public class Animal {
+    private string nome;
+    private int idade;
+
+    public void main() {
+        string saudacao = ""Olá, mundo!"";
+        int x = 10;
+        double y = 3.14;
+        boolean ativo = true;
+
+        if (x > 5) {
+            x = x * 2;
+        } else {
+            x -= 1;
+        }
+
+        /* Loop for com incremento */
+        for (int i = 0; i < 10; i++) {
+            x = x + i;
+        }
+
+        int contador = 0;
+        while (contador < 3) {
+            contador++;
+        }
+
+        switch (x) {
+            case 1:
+                y = 1.0;
+            break;
+            case 2:
+                y = 2.0;
+            break;
+        }
+
+        var resultado = new Animal();
+    }
+}";
     }
 
     // ── File Operations ──
@@ -73,6 +112,7 @@ public partial class MainWindow : Window
     {
         CodeEditor.Text = string.Empty;
         _currentFilePath = null;
+        ClearOutput();
         TxtStatus.Text = "Novo arquivo";
     }
 
@@ -80,14 +120,15 @@ public partial class MainWindow : Window
     {
         var dialog = new OpenFileDialog
         {
-            Filter = "C# Files (*.cs)|*.cs|All Files (*.*)|*.*",
-            DefaultExt = ".cs"
+            Filter = "Arquivos da Linguagem (*.cl)|*.cl|Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
+            DefaultExt = ".cl"
         };
 
         if (dialog.ShowDialog() == true)
         {
             CodeEditor.Text = File.ReadAllText(dialog.FileName);
             _currentFilePath = dialog.FileName;
+            ClearOutput();
             TxtStatus.Text = $"Aberto: {Path.GetFileName(_currentFilePath)}";
         }
     }
@@ -103,9 +144,9 @@ public partial class MainWindow : Window
 
         var dialog = new SaveFileDialog
         {
-            Filter = "C# Files (*.cs)|*.cs|All Files (*.*)|*.*",
-            DefaultExt = ".cs",
-            FileName = "Program.cs"
+            Filter = "Arquivos da Linguagem (*.cl)|*.cl|Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
+            DefaultExt = ".cl",
+            FileName = "programa.cl"
         };
 
         if (dialog.ShowDialog() == true)
@@ -116,155 +157,155 @@ public partial class MainWindow : Window
         }
     }
 
-    // ── Terminal ──
+    // ── Output Panel ──
 
-    private void AppendTerminal(string text)
+    private void ShowTokensTab()
     {
-        Dispatcher.Invoke(() =>
-        {
-            TerminalOutput.AppendText(text);
-            TerminalOutput.ScrollToEnd();
-        });
+        TokenGrid.Visibility = Visibility.Visible;
+        ErrorOutput.Visibility = Visibility.Collapsed;
+        TabTokens.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#CCCCCC"));
+        TabTokens.FontWeight = FontWeights.SemiBold;
+        TabErrors.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#888888"));
+        TabErrors.FontWeight = FontWeights.Normal;
     }
 
-    private void BtnClearTerminal_Click(object sender, RoutedEventArgs e)
+    private void ShowErrorsTab()
     {
-        TerminalOutput.Clear();
+        TokenGrid.Visibility = Visibility.Collapsed;
+        ErrorOutput.Visibility = Visibility.Visible;
+        TabErrors.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#CCCCCC"));
+        TabErrors.FontWeight = FontWeights.SemiBold;
+        TabTokens.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#888888"));
+        TabTokens.FontWeight = FontWeights.Normal;
     }
 
-    // ── Compile & Run ──
-
-    private async void BtnRun_Click(object sender, RoutedEventArgs e)
+    private void ClearOutput()
     {
-        BtnRun.IsEnabled = false;
-        BtnStop.IsEnabled = true;
-        TerminalOutput.Clear();
-        _cts = new CancellationTokenSource();
+        TokenGrid.ItemsSource = null;
+        ErrorOutput.Clear();
+    }
 
-        try
+    private void TabTokens_Click(object sender, System.Windows.Input.MouseButtonEventArgs e) => ShowTokensTab();
+    private void TabErrors_Click(object sender, System.Windows.Input.MouseButtonEventArgs e) => ShowErrorsTab();
+    private void BtnClearOutput_Click(object sender, RoutedEventArgs e) => ClearOutput();
+
+    // ── Lexical Analysis ──
+
+    private void BtnLexical_Click(object sender, RoutedEventArgs e)
+    {
+        ClearOutput();
+        var source = CodeEditor.Text;
+
+        if (string.IsNullOrWhiteSpace(source))
         {
-            TxtStatus.Text = "Preparando projeto...";
-            var projectDir = PrepareTemporaryProject();
+            TxtStatus.Text = "Editor vazio";
+            return;
+        }
 
-            TxtStatus.Text = "Compilando...";
-            AppendTerminal("── Compilando... ──\n");
+        var lexer = new Lexer(source);
+        var result = lexer.Tokenize();
 
-            var buildSuccess = await RunProcessAsync(
-                "dotnet", $"build \"{projectDir}\" -c Release --nologo",
-                _cts.Token);
+        var displayTokens = result.Tokens
+            .Where(t => t.Type != TokenType.EndOfFile)
+            .ToList();
 
-            if (!buildSuccess)
+        TokenGrid.ItemsSource = displayTokens;
+        ShowTokensTab();
+
+        if (result.HasErrors)
+        {
+            ErrorOutput.Text = "── Erros Léxicos ──\n\n" +
+                               string.Join("\n", result.Errors);
+            TxtStatus.Text = $"Análise léxica: {displayTokens.Count} tokens, {result.Errors.Count} erro(s)";
+            TxtStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F44747"));
+        }
+        else
+        {
+            ErrorOutput.Text = $"Análise léxica concluída com sucesso.\n{displayTokens.Count} tokens encontrados. Nenhum erro léxico.";
+            TxtStatus.Text = $"Análise léxica: {displayTokens.Count} tokens, 0 erros";
+            TxtStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4EC9B0"));
+        }
+    }
+
+    // ── Semantic Analysis ──
+
+    private void BtnSemantic_Click(object sender, RoutedEventArgs e)
+    {
+        ClearOutput();
+        var source = CodeEditor.Text;
+
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            TxtStatus.Text = "Editor vazio";
+            return;
+        }
+
+        var lexer = new Lexer(source);
+        var lexResult = lexer.Tokenize();
+
+        var displayTokens = lexResult.Tokens
+            .Where(t => t.Type != TokenType.EndOfFile)
+            .ToList();
+        TokenGrid.ItemsSource = displayTokens;
+
+        var errors = new List<string>();
+
+        if (lexResult.HasErrors)
+        {
+            errors.Add("── Erros Léxicos ──\n");
+            errors.AddRange(lexResult.Errors);
+            errors.Add("");
+        }
+
+        var parser = new Parser(lexResult.Tokens);
+        var parseResult = parser.Parse();
+
+        if (parseResult.HasErrors)
+        {
+            errors.Add("── Erros Sintáticos ──\n");
+            errors.AddRange(parseResult.Errors);
+            errors.Add("");
+        }
+
+        if (parseResult.Program != null)
+        {
+            var analyzer = new SemanticAnalyzer();
+            var semResult = analyzer.Analyze(parseResult.Program);
+
+            if (semResult.HasErrors)
             {
-                TxtStatus.Text = "Erro de compilação";
-                AppendTerminal("\n── Compilação falhou ──\n");
-                return;
+                errors.Add("── Erros Semânticos ──\n");
+                errors.AddRange(semResult.Errors);
+                errors.Add("");
             }
 
-            AppendTerminal("\n── Compilação bem-sucedida ──\n\n");
-            TxtStatus.Text = "Executando...";
-            AppendTerminal("── Executando... ──\n");
-
-            var outputDir = Path.Combine(projectDir, "bin", "Release", "net8.0");
-            var dllPath = Path.Combine(outputDir, "TempProject.dll");
-
-            await RunProcessAsync("dotnet", $"\"{dllPath}\"", _cts.Token);
-
-            AppendTerminal("\n── Execução finalizada ──\n");
-            TxtStatus.Text = "Pronto";
-        }
-        catch (OperationCanceledException)
-        {
-            AppendTerminal("\n── Execução cancelada ──\n");
-            TxtStatus.Text = "Cancelado";
-        }
-        catch (Exception ex)
-        {
-            AppendTerminal($"\n── Erro: {ex.Message} ──\n");
-            TxtStatus.Text = "Erro";
-        }
-        finally
-        {
-            BtnRun.IsEnabled = true;
-            BtnStop.IsEnabled = false;
-            _runningProcess = null;
-            _cts = null;
-        }
-    }
-
-    private void BtnStop_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            _cts?.Cancel();
-            if (_runningProcess is { HasExited: false })
+            if (semResult.Warnings.Count > 0)
             {
-                _runningProcess.Kill(entireProcessTree: true);
+                errors.Add("── Avisos ──\n");
+                errors.AddRange(semResult.Warnings);
+                errors.Add("");
             }
         }
-        catch { }
-    }
 
-    private string PrepareTemporaryProject()
-    {
-        if (Directory.Exists(TempProjectDir))
-            Directory.Delete(TempProjectDir, true);
-
-        Directory.CreateDirectory(TempProjectDir);
-
-        var csproj = """
-            <Project Sdk="Microsoft.NET.Sdk">
-              <PropertyGroup>
-                <OutputType>Exe</OutputType>
-                <TargetFramework>net8.0</TargetFramework>
-                <ImplicitUsings>enable</ImplicitUsings>
-                <Nullable>enable</Nullable>
-              </PropertyGroup>
-            </Project>
-            """;
-
-        File.WriteAllText(Path.Combine(TempProjectDir, "TempProject.csproj"), csproj);
-        File.WriteAllText(Path.Combine(TempProjectDir, "Program.cs"), CodeEditor.Text);
-
-        return TempProjectDir;
-    }
-
-    private async Task<bool> RunProcessAsync(string fileName, string arguments, CancellationToken ct)
-    {
-        var psi = new ProcessStartInfo
+        if (errors.Count > 0)
         {
-            FileName = fileName,
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = TempProjectDir
-        };
-
-        var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
-        _runningProcess = process;
-
-        process.Start();
-
-        var readOut = Task.Run(async () =>
+            ErrorOutput.Text = string.Join("\n", errors);
+            ShowErrorsTab();
+            int errorCount = errors.Count(line => line.StartsWith("Linha"));
+            TxtStatus.Text = $"Análise semântica: {errorCount} erro(s) encontrado(s)";
+            TxtStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F44747"));
+        }
+        else
         {
-            var buffer = new char[256];
-            int count;
-            while ((count = await process.StandardOutput.ReadAsync(buffer, ct)) > 0)
-                AppendTerminal(new string(buffer, 0, count));
-        }, ct);
-
-        var readErr = Task.Run(async () =>
-        {
-            var buffer = new char[256];
-            int count;
-            while ((count = await process.StandardError.ReadAsync(buffer, ct)) > 0)
-                AppendTerminal(new string(buffer, 0, count));
-        }, ct);
-
-        await Task.WhenAll(readOut, readErr);
-        await process.WaitForExitAsync(ct);
-
-        return process.ExitCode == 0;
+            ErrorOutput.Text = "Análise semântica concluída com sucesso!\n\n" +
+                               $"Tokens: {displayTokens.Count}\n" +
+                               "Erros léxicos: 0\n" +
+                               "Erros sintáticos: 0\n" +
+                               "Erros semânticos: 0\n\n" +
+                               "O código está correto!";
+            ShowErrorsTab();
+            TxtStatus.Text = "Análise semântica: código correto";
+            TxtStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4EC9B0"));
+        }
     }
 }

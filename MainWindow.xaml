@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
         xmlns:local="clr-namespace:CSharpEditor"
-        Title="C# Code Editor"
-        Height="700" Width="1100"
-        MinHeight="400" MinWidth="600"
+        Title="MiniLang - Editor de Linguagem"
+        Height="750" Width="1150"
+        MinHeight="450" MinWidth="650"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E1E">
 
@@ -14,7 +14,7 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#CCCCCC"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Padding" Value="14,7"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -35,23 +35,41 @@
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="#505050"/>
                             </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.4"/>
-                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
-        <Style x:Key="RunButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
-            <Setter Property="Foreground" Value="#4EC9B0"/>
+        <Style x:Key="AnalysisButton" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,7"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-
-        <Style x:Key="StopButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
-            <Setter Property="Foreground" Value="#F44747"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderThickness="0"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
@@ -60,32 +78,36 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="200"/>
+            <RowDefinition Height="280"/>
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
-        <Border Grid.Row="0" Background="#2D2D2D" BorderBrush="#3F3F3F" BorderThickness="0,0,0,1" Padding="4,2">
+        <Border Grid.Row="0" Background="#2D2D2D" BorderBrush="#3F3F3F" BorderThickness="0,0,0,1" Padding="6,4">
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                    <Button x:Name="BtnNew" Content="&#x2795; Novo"
+                    <Button x:Name="BtnNew" Content="Novo"
                             Style="{StaticResource ToolbarButton}"
                             Click="BtnNew_Click" ToolTip="Novo arquivo (Ctrl+N)"/>
-                    <Button x:Name="BtnOpen" Content="&#x1F4C2; Abrir"
+                    <Button x:Name="BtnOpen" Content="Abrir"
                             Style="{StaticResource ToolbarButton}"
                             Click="BtnOpen_Click" ToolTip="Abrir arquivo (Ctrl+O)"/>
-                    <Button x:Name="BtnSave" Content="&#x1F4BE; Salvar"
+                    <Button x:Name="BtnSave" Content="Salvar"
                             Style="{StaticResource ToolbarButton}"
                             Click="BtnSave_Click" ToolTip="Salvar arquivo (Ctrl+S)"/>
 
-                    <Border Width="1" Background="#3F3F3F" Margin="8,4"/>
+                    <Border Width="1" Background="#3F3F3F" Margin="10,5"/>
 
-                    <Button x:Name="BtnRun" Content="&#x25B6; Executar"
-                            Style="{StaticResource RunButton}"
-                            Click="BtnRun_Click" ToolTip="Compilar e executar (F5)"/>
-                    <Button x:Name="BtnStop" Content="&#x25A0; Parar"
-                            Style="{StaticResource StopButton}"
-                            Click="BtnStop_Click" ToolTip="Parar execução"
-                            IsEnabled="False"/>
+                    <Button x:Name="BtnLexical" Content="Análise Léxica"
+                            Style="{StaticResource AnalysisButton}"
+                            Background="#0E639C"
+                            Click="BtnLexical_Click" ToolTip="Executar análise léxica (F5)"/>
+
+                    <Border Width="6" Background="Transparent"/>
+
+                    <Button x:Name="BtnSemantic" Content="Análise Semântica"
+                            Style="{StaticResource AnalysisButton}"
+                            Background="#4D8A3F"
+                            Click="BtnSemantic_Click" ToolTip="Executar análise semântica (F6)"/>
                 </StackPanel>
 
                 <TextBlock x:Name="TxtStatus" DockPanel.Dock="Right"
@@ -118,28 +140,77 @@
                       ResizeBehavior="PreviousAndNext"
                       Cursor="SizeNS"/>
 
-        <!-- Terminal Output -->
+        <!-- Output Panel -->
         <Grid Grid.Row="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Background="#252526" Padding="10,5">
+            <!-- Output Header with Tabs -->
+            <Border Grid.Row="0" Background="#252526" Padding="10,5" BorderBrush="#3F3F3F" BorderThickness="0,1,0,0">
                 <DockPanel>
-                    <TextBlock Text="Terminal" Foreground="#CCCCCC" FontSize="12"
-                               FontFamily="Segoe UI" FontWeight="SemiBold"
-                               VerticalAlignment="Center"/>
-                    <Button x:Name="BtnClearTerminal" Content="Limpar"
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                        <TextBlock x:Name="TabTokens" Text="Tokens"
+                                   Foreground="#CCCCCC" FontSize="12"
+                                   FontFamily="Segoe UI" FontWeight="SemiBold"
+                                   Cursor="Hand" Padding="8,4"
+                                   MouseDown="TabTokens_Click"/>
+                        <TextBlock Text="|" Foreground="#3F3F3F" VerticalAlignment="Center" Margin="4,0"/>
+                        <TextBlock x:Name="TabErrors" Text="Mensagens"
+                                   Foreground="#888888" FontSize="12"
+                                   FontFamily="Segoe UI"
+                                   Cursor="Hand" Padding="8,4"
+                                   MouseDown="TabErrors_Click"/>
+                    </StackPanel>
+                    <Button x:Name="BtnClearOutput" Content="Limpar"
                             Style="{StaticResource ToolbarButton}"
-                            Click="BtnClearTerminal_Click"
+                            Click="BtnClearOutput_Click"
                             DockPanel.Dock="Right" HorizontalAlignment="Right"
                             FontSize="11"/>
                 </DockPanel>
             </Border>
 
+            <!-- Token Table -->
+            <DataGrid Grid.Row="1"
+                      x:Name="TokenGrid"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      Background="#1E1E1E"
+                      Foreground="#CCCCCC"
+                      RowBackground="#1E1E1E"
+                      AlternatingRowBackground="#252526"
+                      BorderThickness="0"
+                      GridLinesVisibility="None"
+                      HeadersVisibility="Column"
+                      FontFamily="Cascadia Code, Consolas, Courier New"
+                      FontSize="12"
+                      CanUserResizeRows="False"
+                      SelectionMode="Single"
+                      ColumnHeaderHeight="28"
+                      RowHeight="24">
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#2D2D2D"/>
+                        <Setter Property="Foreground" Value="#4EC9B0"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Padding" Value="8,4"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                        <Setter Property="BorderBrush" Value="#3F3F3F"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Token" Binding="{Binding Value}" Width="*"/>
+                    <DataGridTextColumn Header="Tipo" Binding="{Binding TypeName}" Width="*"/>
+                    <DataGridTextColumn Header="Linha" Binding="{Binding Line}" Width="80"/>
+                    <DataGridTextColumn Header="Coluna" Binding="{Binding Column}" Width="80"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Error/Messages TextBox -->
             <TextBox Grid.Row="1"
-                     x:Name="TerminalOutput"
+                     x:Name="ErrorOutput"
+                     Visibility="Collapsed"
                      IsReadOnly="True"
                      Background="#1E1E1E"
                      Foreground="#CCCCCC"
@@ -148,7 +219,6 @@
                      BorderThickness="0"
                      TextWrapping="Wrap"
                      VerticalScrollBarVisibility="Auto"
-                     HorizontalScrollBarVisibility="Auto"
                      Padding="10,6"
                      AcceptsReturn="True"/>
         </Grid>
