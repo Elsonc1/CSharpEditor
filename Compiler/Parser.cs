@@ -59,6 +59,15 @@ public class Parser
         return Current;
     }
 
+    /// <summary>O lexema <c>main</c> é palavra reservada (<see cref="TokenType.KwMain"/>), mas pode ser nome de método/variável como no exemplo Unifacvest.</summary>
+    private Token ExpectDeclarationName(string message)
+    {
+        if (Check(TokenType.Identifier) || Check(TokenType.KwMain))
+            return Advance();
+        _result.Errors.Add($"Linha {Current.Line}, Coluna {Current.Column}: {message} (encontrado '{Current.Value}')");
+        return Current;
+    }
+
     private void Synchronize()
     {
         Advance();
@@ -240,7 +249,7 @@ public class Parser
         else if (Match(TokenType.KwPrivate)) access = "private";
 
         var typeToken = Advance(); // type
-        var nameToken = Expect(TokenType.Identifier, "Esperado nome.");
+        var nameToken = ExpectDeclarationName("Esperado nome.");
 
         // Method: type name ( ... ) { ... }
         if (Check(TokenType.LeftParen))
@@ -274,7 +283,7 @@ public class Parser
             do
             {
                 var pType = Advance();
-                var pName = Expect(TokenType.Identifier, "Esperado nome do parâmetro.");
+                var pName = ExpectDeclarationName("Esperado nome do parâmetro.");
                 parameters.Add(new ParameterNode
                 {
                     TypeName = pType.Value, Name = pName.Value,
@@ -380,7 +389,7 @@ public class Parser
             if (IsTypeKeyword())
             {
                 var typeToken = Advance();
-                var nameToken = Expect(TokenType.Identifier, "Esperado nome de variável.");
+                var nameToken = ExpectDeclarationName("Esperado nome de variável.");
                 AstNode? initializer = null;
                 if (Match(TokenType.Assign))
                     initializer = ParseExpression();

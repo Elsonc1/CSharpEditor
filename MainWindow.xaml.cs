@@ -221,7 +221,11 @@ public class Animal {
         }
         else
         {
-            ErrorOutput.Text = $"Análise léxica concluída com sucesso.\n{displayTokens.Count} tokens encontrados. Nenhum erro léxico.";
+            var legacy = LegacyLexicalFormatter.Format(result);
+            ErrorOutput.Text =
+                $"Análise léxica concluída com sucesso.\n{displayTokens.Count} tokens encontrados. Nenhum erro léxico.\n\n" +
+                "--- Formato legado (referência Java / Unifacvest) ---\n" +
+                legacy;
             TxtStatus.Text = $"Análise léxica: {displayTokens.Count} tokens, 0 erros";
             TxtStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4EC9B0"));
         }
