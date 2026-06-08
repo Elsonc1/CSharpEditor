@@ -1,146 +1,158 @@
-# Entrega — Análise Sintática (Compiladores 2026/1)
+# Delivery — Syntax Analysis (Compilers 2026/1)
 
-**Aluno:** Elson Vinicius de Souza Lopes
-**Disciplina:** Compiladores — UNIFACVEST
-**Prazo:** 09/06
-**Implementação:** C# / .NET 10 / WPF (referência Java do professor em `.claude/tmp/src/br/com/unifacvest/`)
-
----
-
-## Requisitos atendidos
-
-### 1. Balanceador de `( [ { } ] )`
-
-- **Arquivo:** `Compiler/Balanceador.cs`
-- **Algoritmo:** pilha (idêntico em ideia ao `Balanceador.java` do professor)
-- **Diferencial:** opera sobre tokens — símbolos dentro de strings literais e
-  comentários não confundem a análise.
-- **UI:** botão "Balanceador" (atalho **F4**) em `MainWindow.xaml`.
-- **Testes:** `CSharpEditor.Tests/BalanceadorTests.cs` (11 casos).
-
-### 2. Análise das estruturas
-
-Implementada via parser descendente recursivo (`Compiler/Parser.cs`) + analisador
-semântico (`Compiler/SemanticAnalyzer.cs`).
-
-| Estrutura | Sintaxe                                          | Validações |
-|-----------|--------------------------------------------------|------------|
-| `if`      | `if (cond) {} [else {}] / [else if (...) {}]`    | parens, blocos, cond `boolean`, suporte a cadeia `else if` |
-| `for`     | `for (init; cond; incr) {}`                      | 2× `;`, cond `boolean`, escopo da init |
-| `while`   | `while (cond) {}`                                | parens, bloco, cond `boolean` |
-| `switch`  | `switch (e) { case v: ...; break; }`             | bloco, cases, `break` opcional |
-| `class`   | `[public/private] class N [herdar B] [assinar I,...] {}` | nome, ordem, corpo |
-| método    | `[acesso] tipo nome(params) {}`                  | parens, params, return type vs corpo |
-| `return`  | `return [expr];`                                 | tipo compatível com método, void não retorna valor |
-| `break`   | `break;`                                         | só em loop ou switch |
-| `continue`| `continue;`                                      | só em loop (switch puro rejeita) |
-
-- **Testes:** `CSharpEditor.Tests/EstruturasTests.cs` (≥ 24 casos).
+**Student:** Elson Vinicius de Souza Lopes
+**Course:** Compilers — UNIFACVEST
+**Due date:** 2026-06-09
+**Implementation:** C# / .NET 10 / WPF (professor's Java reference kept under
+`.claude/tmp/src/br/com/unifacvest/`)
 
 ---
 
-## Mapeamento C# ↔ Java do professor
+## Requirements met
 
-| Componente Java                                              | C# correspondente                                |
-|--------------------------------------------------------------|--------------------------------------------------|
-| `controller/AnaliseLexica.java`                              | `Compiler/Lexer.cs` + `LegacyLexicalFormatter.cs`|
-| `controller/Balanceador.java`                                | `Compiler/Balanceador.cs`                        |
-| `controller/AnaliseSintatica.java` (skeleton com `ifEstrutura`) | `Compiler/Parser.cs` (recursive descent completo) |
-| `model/PalavrasReservadas.java`                              | `Lexer.Keywords` (dicionário)                    |
-| `model/Operadores.java`                                      | `Lexer.ReadOperatorOrDelimiter`                  |
-| `model/Delimitadores.java`                                   | tokens em `Token.cs`                             |
-| `view/JFrameCompilador.java` (Swing)                         | `MainWindow.xaml` (WPF + AvalonEdit)             |
-| `Principal.java`                                             | `App.xaml.cs` + `MainWindow`                     |
+### 1. Bracket balancer for `( [ { } ] )`
 
----
+- **File:** `Compiler/Balanceador.cs`
+- **Algorithm:** stack (same idea as the professor's `Balanceador.java`)
+- **Conscious extension:** operates on tokens rather than raw text, so
+  symbols inside string literals and comments do not confuse the analysis.
+- **UI:** "Balanceador" button (shortcut **F4**) in `MainWindow.xaml`.
+- **Tests:** `CSharpEditor.Tests/BalanceadorTests.cs` (11 cases).
 
-## Extensões conscientes (além da referência Java)
+### 2. Structural analysis
 
-- **AST formal** (`Compiler/AstNodes.cs`) — facilita análise semântica e futura geração de código.
-- **Tokens com linha + coluna** — todos os erros indicam onde.
-- **Error recovery** no parser (método `Synchronize`) — não para no primeiro erro.
-- **Analisador semântico** — bônus além do trabalho:
-  - tabela de símbolos com escopos aninhados
-  - checagem de tipos (atribuição, expressões binárias/unárias, retornos)
-  - `break`/`continue` validados em contexto
-  - redeclaração detectada
-  - tipo de retorno validado contra assinatura do método
-- **Cadeia `else if`** suportada no parser.
-- **`LegacyLexicalFormatter`** — preserva compatibilidade com o formato `(lexema, CATEGORIA)` do Java.
-- **Suite de testes automatizados** — xUnit + FluentAssertions, > 45 casos.
+Implemented by the recursive-descent parser (`Compiler/Parser.cs`) and the
+semantic analyzer (`Compiler/SemanticAnalyzer.cs`).
 
----
+| Structure | Syntax                                                | Validations                                                            |
+|-----------|-------------------------------------------------------|------------------------------------------------------------------------|
+| `if`      | `if (cond) {} [else {}] / [else if (...) {}]`         | parentheses, blocks, boolean condition, `else if` chain supported      |
+| `for`     | `for (init; cond; incr) {}`                           | two `;`, boolean condition, scoped initializer                         |
+| `while`   | `while (cond) {}`                                     | parentheses, block, boolean condition                                  |
+| `switch`  | `switch (e) { case v: ...; break; }`                  | block, cases, optional `break`                                         |
+| `class`   | `[public/private] class N [herdar B] [assinar I,...] {}` | name, modifier order, body                                           |
+| method    | `[access] type name(params) {}`                       | parentheses, parameters, return type matched against body              |
+| `return`  | `return [expr];`                                      | type compatible with the method; `void` cannot return a value          |
+| `break`   | `break;`                                              | only inside a loop or a `switch`                                       |
+| `continue`| `continue;`                                           | only inside a loop (a bare `switch` is rejected)                       |
 
-## Limitações documentadas
-
-| Limitação                                       | Motivo |
-|-------------------------------------------------|--------|
-| `default` em `switch` não é palavra reservada   | Não consta em `PalavrasReservadas.java` do prof — paridade preservada |
-| Sem checagem de visibilidade `private`/`public` | Fora do escopo do trabalho |
-| Sem code generation / interpretação             | Trabalho exige só análise |
-| Char literal aceita multi-char (`'ab'`)          | Mantido como warning futuro |
-| Sem checagem de método não declarado em chamada | Apenas variáveis são validadas |
+- **Tests:** `CSharpEditor.Tests/EstruturasTests.cs` (25 cases).
 
 ---
 
-## Como rodar e demonstrar
+## C# ↔ Java mapping
 
-### Pré-requisitos
+| Java component                                                 | C# counterpart                                          |
+|----------------------------------------------------------------|---------------------------------------------------------|
+| `controller/AnaliseLexica.java`                                | `Compiler/Lexer.cs` + `Compiler/LegacyLexicalFormatter.cs` |
+| `controller/Balanceador.java`                                  | `Compiler/Balanceador.cs`                               |
+| `controller/AnaliseSintatica.java` (skeleton with `ifEstrutura`) | `Compiler/Parser.cs` (full recursive descent)         |
+| `model/PalavrasReservadas.java`                                | `Lexer.Keywords` dictionary                             |
+| `model/Operadores.java`                                        | `Lexer.ReadOperatorOrDelimiter`                         |
+| `model/Delimitadores.java`                                     | tokens in `Compiler/Token.cs`                           |
+| `view/JFrameCompilador.java` (Swing)                           | `MainWindow.xaml` (WPF + AvalonEdit)                    |
+| `Principal.java`                                               | `App.xaml.cs` + `MainWindow`                            |
+
+---
+
+## Conscious extensions over the reference
+
+- **Formal AST** (`Compiler/AstNodes.cs`) — enables semantic analysis and any
+  future code generation.
+- **Line and column on every token and every error** — the Java reference
+  reports line only.
+- **Parser error recovery** via `Synchronize()` — the parser does not stop on
+  the first error.
+- **Semantic analyzer** — bonus over the assignment:
+  - symbol table with nested scopes
+  - type checking (assignments, binary and unary expressions, returns)
+  - `break`/`continue` validated against their enclosing context
+  - redeclaration detection
+  - return type validated against the method signature
+- **`else if` chain** supported by the parser.
+- **`LegacyLexicalFormatter`** — preserves compatibility with the
+  `(lexeme, CATEGORY)` format produced by the Java reference.
+- **Automated test suite** — xUnit and FluentAssertions, 50 cases.
+
+---
+
+## Documented limitations
+
+| Limitation                                              | Reason                                                                       |
+|---------------------------------------------------------|------------------------------------------------------------------------------|
+| `default` is not a reserved word in `switch`            | Not present in the professor's `PalavrasReservadas.java`; parity preserved   |
+| No visibility check (`private`/`public`)                | Out of scope                                                                 |
+| No code generation or interpretation                    | The assignment requires only analysis                                        |
+| Char literal accepts multiple characters (`'ab'`)       | Kept as a future warning                                                     |
+| No check that a called method exists                    | Only variables are validated against the symbol table                        |
+
+---
+
+## How to build, run, and demo
+
+### Prerequisites
 - Windows
 - .NET 10 SDK
-- Visual Studio 2022+ (opcional, dá pra rodar via CLI)
+- Visual Studio 2022+ is optional; everything also runs from the CLI.
 
-### Build e testes
+### Build and tests
 ```powershell
 dotnet build CSharpEditor.sln
 dotnet test CSharpEditor.Tests
 ```
 
-### Rodar a aplicação WPF
+### Run the WPF application
 ```powershell
 dotnet run --project CSharpEditor.csproj
 ```
 
-### Demonstração (roteiro sugerido)
-1. Abrir o editor — código de exemplo já vem carregado.
-2. **F4** — Balanceador. Mostra "Balanceado".
-3. Alterar `if (x > 5) {` para `if (x > 5 {` (remover `)`) e **F4** novamente — mostra `Linha N, Coluna M: '(' aberto e não fechado`.
-4. **F5** — Análise Léxica. Tabela de tokens + formato legado (compatível com o Java).
-5. **F6** — Análise Semântica. Pipeline lex → parse → semantic com erros estruturais.
-6. Testar `else if` em cadeia, `for (int i = 0; i < 10; i++)`, `switch case break`.
+### Demo script (suggested)
+1. Open the editor — a sample program is preloaded.
+2. Press **F4** — Balancer. The output shows "Balanceado" (balanced).
+3. Change `if (x > 5) {` to `if (x > 5 {` (remove the `)`) and press **F4**
+   again — the output reports `Linha N, Coluna M: '(' aberto e não fechado`
+   (`'(' opened and not closed`).
+4. Press **F5** — Lexical analysis. The Tokens table is populated, and the
+   legacy format (compatible with the Java reference) is shown in the
+   Messages tab.
+5. Press **F6** — Semantic analysis. The full pipeline runs:
+   lexer → parser → semantic analyzer, with any structural errors listed.
+6. Try `else if` chains, `for (int i = 0; i < 10; i++)`, and
+   `switch`/`case`/`break` blocks.
 
 ---
 
-## Estrutura do projeto
+## Project layout
 
 ```
 CSharpEditor/
 ├── Compiler/
-│   ├── Token.cs                    — enum TokenType + classe Token
-│   ├── Lexer.cs                    — tokenizador
-│   ├── LegacyLexicalFormatter.cs   — saída no formato Java do prof
-│   ├── Balanceador.cs              — REQUISITO 1
-│   ├── AstNodes.cs                 — nós da AST
-│   ├── Parser.cs                   — REQUISITO 2 (análise sintática)
-│   └── SemanticAnalyzer.cs         — bônus (análise semântica)
+│   ├── Token.cs                    — TokenType enum and Token class
+│   ├── Lexer.cs                    — tokenizer
+│   ├── LegacyLexicalFormatter.cs   — output in the Java reference format
+│   ├── Balanceador.cs              — REQUIREMENT 1
+│   ├── AstNodes.cs                 — AST node types
+│   ├── Parser.cs                   — REQUIREMENT 2 (syntax analysis)
+│   └── SemanticAnalyzer.cs         — bonus (semantic analysis)
 ├── CSharpEditor.Tests/
-│   ├── LexerTests.cs               — 6 testes
-│   ├── LegacyLexicalFormatterTests.cs — 5 testes
-│   ├── BalanceadorTests.cs         — 11 testes (REQUISITO 1)
-│   ├── EstruturasTests.cs          — 24+ testes (REQUISITO 2)
-│   └── ParserSemanticSmokeTests.cs — 3 testes
-├── MainWindow.xaml / .xaml.cs      — UI WPF + AvalonEdit
-├── CSharpSyntax.xshd               — syntax highlight
+│   ├── LexerTests.cs                       — 6 tests
+│   ├── LegacyLexicalFormatterTests.cs      — 5 tests
+│   ├── BalanceadorTests.cs                 — 11 tests (REQUIREMENT 1)
+│   ├── EstruturasTests.cs                  — 25 tests (REQUIREMENT 2)
+│   └── ParserSemanticSmokeTests.cs         — 3 tests
+├── MainWindow.xaml / .xaml.cs       — WPF UI and AvalonEdit hosting
+├── CSharpSyntax.xshd                — syntax highlighting definition
 └── .claude/
-    ├── agents/                     — 9 agents especializados + README
-    └── tmp/src/br/com/unifacvest/  — referência Java do professor
+    ├── agents/                      — 9 specialized agent personas and a README
+    ├── history/                     — chronological log of every session
+    └── tmp/src/br/com/unifacvest/   — professor's Java reference
 ```
 
 ---
 
-## Estatísticas
+## Numbers
 
-- **Linhas de código:** ~1500 (excluindo testes e UI gerada)
-- **Testes automatizados:** > 45 (todos verdes)
-- **Cobertura:** lexer, balanceador, parser (todas estruturas), semantic
-- **Tecnologias:** C# 12, .NET 10, WPF, AvalonEdit, xUnit, FluentAssertions
+- **Production code:** ~1500 lines (excluding tests and generated UI code)
+- **Automated tests:** 50, all passing
+- **Coverage:** lexer, balancer, parser (all structures), semantic analyzer
+- **Tech stack:** C# 12, .NET 10, WPF, AvalonEdit, xUnit, FluentAssertions
