@@ -35,9 +35,10 @@ the main loop must follow each persona's spec directly. See
 | `cseditor-ui`          | Buttons, shortcuts, output panel in the WPF UI            | sonnet |
 | `cseditor-prof-ref`    | Keeping parity with the professor's Java reference        | sonnet |
 
-The persona files (`cseditor-*.md`) are written in Portuguese to keep the
-vocabulary aligned with the coursework. The catalog and orientation here are in
-English so any new contributor can navigate.
+All persona files (`cseditor-*.md`) are written in American English. A few
+filenames keep their Portuguese form (`balanceador`, `estruturas`,
+`semantica`) to match the coursework vocabulary and the corresponding C#
+class names (`Balanceador`); the prose inside each file is English.
 
 ## Recommended workflow for delivery
 

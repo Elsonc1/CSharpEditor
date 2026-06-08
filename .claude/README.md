@@ -55,9 +55,12 @@ and the C# version preserves output compatibility with it via
 
 ## Conventions
 
-- Files in this directory are written in American English, except the agent
-  persona files (`agents/cseditor-*.md`), which intentionally keep Portuguese
-  terminology aligned with the coursework language.
+- All Markdown files in this directory are written in American English.
+- A few identifiers in agent filenames (`cseditor-balanceador`,
+  `cseditor-estruturas`, `cseditor-semantica`) and inside the codebase
+  (`Balanceador`, `Erros`, `Balanceado`) intentionally keep their Portuguese
+  spelling — they match the vocabulary of the coursework language and the
+  professor's reference, and are kept verbatim to preserve traceability.
 - History entries are numbered `NNN-slug.md` in chronological order. Add new
   entries; do not edit old ones except to fix factual mistakes (note the fix in
   the file itself).
