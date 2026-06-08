@@ -97,6 +97,13 @@
 
                     <Border Width="1" Background="#3F3F3F" Margin="10,5"/>
 
+                    <Button x:Name="BtnBalance" Content="Balanceador"
+                            Style="{StaticResource AnalysisButton}"
+                            Background="#A35A00"
+                            Click="BtnBalance_Click" ToolTip="Verificar balanceamento de ( [ { } ] ) (F4)"/>
+
+                    <Border Width="6" Background="Transparent"/>
+
                     <Button x:Name="BtnLexical" Content="Análise Léxica"
                             Style="{StaticResource AnalysisButton}"
                             Background="#0E639C"

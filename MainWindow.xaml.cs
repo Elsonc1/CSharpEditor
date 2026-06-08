@@ -25,6 +25,11 @@ public partial class MainWindow : Window
     private void RegisterKeyBindings()
     {
         CommandBindings.Add(new CommandBinding(
+            new RoutedCommand("Balance", typeof(MainWindow),
+                new InputGestureCollection { new KeyGesture(Key.F4) }),
+            (_, _) => BtnBalance_Click(this, new RoutedEventArgs())));
+
+        CommandBindings.Add(new CommandBinding(
             new RoutedCommand("LexicalAnalysis", typeof(MainWindow),
                 new InputGestureCollection { new KeyGesture(Key.F5) }),
             (_, _) => BtnLexical_Click(this, new RoutedEventArgs())));
@@ -188,6 +193,39 @@ public class Animal {
     private void TabTokens_Click(object sender, System.Windows.Input.MouseButtonEventArgs e) => ShowTokensTab();
     private void TabErrors_Click(object sender, System.Windows.Input.MouseButtonEventArgs e) => ShowErrorsTab();
     private void BtnClearOutput_Click(object sender, RoutedEventArgs e) => ClearOutput();
+
+    // ── Balanceador ──
+
+    private void BtnBalance_Click(object sender, RoutedEventArgs e)
+    {
+        ClearOutput();
+        var source = CodeEditor.Text;
+
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            TxtStatus.Text = "Editor vazio";
+            return;
+        }
+
+        var result = Balanceador.Verificar(source);
+        ShowErrorsTab();
+
+        if (result.Balanceado)
+        {
+            ErrorOutput.Text =
+                "Balanceador concluído com sucesso.\n\n" +
+                "Todos os símbolos ( [ { } ] ) estão balanceados.";
+            TxtStatus.Text = "Balanceador: OK";
+            TxtStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4EC9B0"));
+        }
+        else
+        {
+            ErrorOutput.Text = "── Desbalanceamentos ──\n\n" +
+                               string.Join("\n", result.Erros);
+            TxtStatus.Text = $"Balanceador: {result.Erros.Count} problema(s)";
+            TxtStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F44747"));
+        }
+    }
 
     // ── Lexical Analysis ──
 

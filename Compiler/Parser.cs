@@ -354,7 +354,20 @@ public class Parser
 
         BlockNode? elseBranch = null;
         if (Match(TokenType.KwElse))
-            elseBranch = ParseBlock();
+        {
+            // Suporte a `else if (...) { ... }` — empacota o if aninhado em
+            // um BlockNode sintético para manter `ElseBranch: BlockNode?`.
+            if (Check(TokenType.KwIf))
+            {
+                var nestedIf = ParseIf();
+                elseBranch = new BlockNode { Line = nestedIf.Line, Column = nestedIf.Column };
+                elseBranch.Statements.Add(nestedIf);
+            }
+            else
+            {
+                elseBranch = ParseBlock();
+            }
+        }
 
         return new IfNode
         {

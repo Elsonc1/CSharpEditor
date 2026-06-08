@@ -19,6 +19,8 @@ public class SemanticAnalyzer
     private readonly SemanticResult _result = new();
     private readonly List<Dictionary<string, Symbol>> _scopes = new();
     private int _loopDepth;
+    private int _switchDepth;
+    private string? _currentMethodReturnType;
 
     public SemanticResult Analyze(ProgramNode program)
     {
@@ -51,6 +53,8 @@ public class SemanticAnalyzer
         return true;
     }
 
+    private static string At(AstNode n) => $"Linha {n.Line}, Coluna {n.Column}";
+
     private void AnalyzeNode(AstNode node)
     {
         switch (node)
@@ -82,7 +86,7 @@ public class SemanticAnalyzer
         if (!DeclareSymbol(decl.Name, decl.TypeName, decl.Line))
         {
             _result.Errors.Add(
-                $"Linha {decl.Line}: Variável '{decl.Name}' já foi declarada neste escopo.");
+                $"{At(decl)}: Variável '{decl.Name}' já foi declarada neste escopo.");
             return;
         }
 
@@ -92,7 +96,7 @@ public class SemanticAnalyzer
             if (initType != null && decl.TypeName != "var" && !IsTypeCompatible(decl.TypeName, initType))
             {
                 _result.Errors.Add(
-                    $"Linha {decl.Line}: Tipo incompatível na declaração de '{decl.Name}'. " +
+                    $"{At(decl)}: Tipo incompatível na declaração de '{decl.Name}'. " +
                     $"Esperado '{decl.TypeName}', encontrado '{initType}'.");
             }
         }
@@ -104,7 +108,7 @@ public class SemanticAnalyzer
         if (symbol == null)
         {
             _result.Errors.Add(
-                $"Linha {assign.Line}: Variável '{assign.Name}' não foi declarada.");
+                $"{At(assign)}: Variável '{assign.Name}' não foi declarada.");
             return;
         }
 
@@ -115,7 +119,7 @@ public class SemanticAnalyzer
             if (symbol.Type != "int" && symbol.Type != "double")
             {
                 _result.Errors.Add(
-                    $"Linha {assign.Line}: Operador '{assign.Operator}' requer tipo numérico para '{assign.Name}'.");
+                    $"{At(assign)}: Operador '{assign.Operator}' requer tipo numérico para '{assign.Name}'.");
             }
             return;
         }
@@ -123,7 +127,7 @@ public class SemanticAnalyzer
         if (valueType != null && !IsTypeCompatible(symbol.Type, valueType))
         {
             _result.Errors.Add(
-                $"Linha {assign.Line}: Tipo incompatível na atribuição de '{assign.Name}'. " +
+                $"{At(assign)}: Tipo incompatível na atribuição de '{assign.Name}'. " +
                 $"Esperado '{symbol.Type}', encontrado '{valueType}'.");
         }
     }
@@ -134,7 +138,7 @@ public class SemanticAnalyzer
         if (condType != null && condType != "boolean")
         {
             _result.Errors.Add(
-                $"Linha {ifNode.Line}: Condição do 'if' deve ser do tipo 'boolean', encontrado '{condType}'.");
+                $"{At(ifNode)}: Condição do 'if' deve ser do tipo 'boolean', encontrado '{condType}'.");
         }
         AnalyzeBlock(ifNode.ThenBranch);
         if (ifNode.ElseBranch != null)
@@ -147,7 +151,7 @@ public class SemanticAnalyzer
         if (condType != null && condType != "boolean")
         {
             _result.Errors.Add(
-                $"Linha {whileNode.Line}: Condição do 'while' deve ser do tipo 'boolean', encontrado '{condType}'.");
+                $"{At(whileNode)}: Condição do 'while' deve ser do tipo 'boolean', encontrado '{condType}'.");
         }
         _loopDepth++;
         AnalyzeBlock(whileNode.Body);
@@ -164,7 +168,7 @@ public class SemanticAnalyzer
             if (condType != null && condType != "boolean")
             {
                 _result.Errors.Add(
-                    $"Linha {forNode.Line}: Condição do 'for' deve ser do tipo 'boolean', encontrado '{condType}'.");
+                    $"{At(forNode)}: Condição do 'for' deve ser do tipo 'boolean', encontrado '{condType}'.");
             }
         }
         if (forNode.Increment != null) AnalyzeNode(forNode.Increment);
@@ -177,31 +181,63 @@ public class SemanticAnalyzer
     private void AnalyzeSwitch(SwitchNode switchNode)
     {
         AnalyzeExpression(switchNode.Expression);
-        _loopDepth++;
+        _switchDepth++;
         foreach (var c in switchNode.Cases)
         {
             if (c.Value != null) AnalyzeExpression(c.Value);
             foreach (var s in c.Statements) AnalyzeNode(s);
         }
-        _loopDepth--;
+        _switchDepth--;
     }
 
     private void AnalyzeReturn(ReturnNode ret)
     {
-        if (ret.Expression != null)
-            AnalyzeExpression(ret.Expression);
+        if (_currentMethodReturnType == null)
+        {
+            if (ret.Expression != null)
+                AnalyzeExpression(ret.Expression);
+            return;
+        }
+
+        if (_currentMethodReturnType == "void")
+        {
+            if (ret.Expression != null)
+            {
+                _result.Errors.Add(
+                    $"{At(ret)}: Método 'void' não pode retornar valor.");
+                AnalyzeExpression(ret.Expression);
+            }
+            return;
+        }
+
+        if (ret.Expression == null)
+        {
+            _result.Errors.Add(
+                $"{At(ret)}: Esperado valor de retorno do tipo '{_currentMethodReturnType}'.");
+            return;
+        }
+
+        var actualType = AnalyzeExpression(ret.Expression);
+        if (actualType != null && !IsTypeCompatible(_currentMethodReturnType, actualType))
+        {
+            _result.Errors.Add(
+                $"{At(ret)}: Tipo de retorno incompatível. " +
+                $"Esperado '{_currentMethodReturnType}', encontrado '{actualType}'.");
+        }
     }
 
     private void AnalyzeBreak(BreakNode brk)
     {
-        if (_loopDepth == 0)
-            _result.Errors.Add($"Linha {brk.Line}: 'break' fora de um loop ou switch.");
+        if (_loopDepth == 0 && _switchDepth == 0)
+            _result.Errors.Add($"{At(brk)}: 'break' fora de um loop ou switch.");
     }
 
     private void AnalyzeContinue(ContinueNode cont)
     {
+        // `continue` NÃO é válido dentro de switch puro (sem loop envolvendo) —
+        // por isso checa apenas _loopDepth, ignorando _switchDepth.
         if (_loopDepth == 0)
-            _result.Errors.Add($"Linha {cont.Line}: 'continue' fora de um loop.");
+            _result.Errors.Add($"{At(cont)}: 'continue' fora de um loop.");
     }
 
     private void AnalyzeClass(ClassNode cls)
@@ -216,12 +252,15 @@ public class SemanticAnalyzer
     private void AnalyzeMethod(MethodNode method)
     {
         DeclareSymbol(method.Name, method.ReturnType, method.Line);
+        var savedReturnType = _currentMethodReturnType;
+        _currentMethodReturnType = method.ReturnType;
         PushScope();
         foreach (var p in method.Parameters)
             DeclareSymbol(p.Name, p.TypeName, p.Line);
         foreach (var stmt in method.Body.Statements)
             AnalyzeNode(stmt);
         PopScope();
+        _currentMethodReturnType = savedReturnType;
     }
 
     private void AnalyzeBlock(BlockNode block)
@@ -247,7 +286,7 @@ public class SemanticAnalyzer
                 var symbol = LookupSymbol(id.Name);
                 if (symbol == null)
                 {
-                    _result.Errors.Add($"Linha {id.Line}: Variável '{id.Name}' não foi declarada.");
+                    _result.Errors.Add($"{At(id)}: Variável '{id.Name}' não foi declarada.");
                     return null;
                 }
                 return symbol.Type;
@@ -277,7 +316,7 @@ public class SemanticAnalyzer
                 AnalyzeExpression(arr.Array);
                 var idxType = AnalyzeExpression(arr.Index);
                 if (idxType != null && idxType != "int")
-                    _result.Errors.Add($"Linha {arr.Line}: Índice do array deve ser 'int', encontrado '{idxType}'.");
+                    _result.Errors.Add($"{At(arr)}: Índice do array deve ser 'int', encontrado '{idxType}'.");
                 return null;
             }
             default: return null;
@@ -294,17 +333,17 @@ public class SemanticAnalyzer
             case "!":
                 if (operandType != "boolean")
                     _result.Errors.Add(
-                        $"Linha {unary.Line}: Operador '!' requer tipo 'boolean', encontrado '{operandType}'.");
+                        $"{At(unary)}: Operador '!' requer tipo 'boolean', encontrado '{operandType}'.");
                 return "boolean";
             case "-":
                 if (!IsNumericType(operandType))
                     _result.Errors.Add(
-                        $"Linha {unary.Line}: Operador '-' requer tipo numérico, encontrado '{operandType}'.");
+                        $"{At(unary)}: Operador '-' requer tipo numérico, encontrado '{operandType}'.");
                 return operandType;
             case "++" or "--":
                 if (!IsNumericType(operandType))
                     _result.Errors.Add(
-                        $"Linha {unary.Line}: Operador '{unary.Operator}' requer tipo numérico, encontrado '{operandType}'.");
+                        $"{At(unary)}: Operador '{unary.Operator}' requer tipo numérico, encontrado '{operandType}'.");
                 return operandType;
             default:
                 return null;
@@ -327,7 +366,7 @@ public class SemanticAnalyzer
                 if (!IsNumericType(leftType) || !IsNumericType(rightType))
                 {
                     _result.Errors.Add(
-                        $"Linha {binary.Line}: Operador '{binary.Operator}' requer tipos numéricos, " +
+                        $"{At(binary)}: Operador '{binary.Operator}' requer tipos numéricos, " +
                         $"encontrado '{leftType}' e '{rightType}'.");
                     return null;
                 }
@@ -339,7 +378,7 @@ public class SemanticAnalyzer
                 if (!IsTypeCompatible(leftType, rightType) && !IsTypeCompatible(rightType, leftType))
                 {
                     _result.Errors.Add(
-                        $"Linha {binary.Line}: Não é possível comparar '{leftType}' com '{rightType}'.");
+                        $"{At(binary)}: Não é possível comparar '{leftType}' com '{rightType}'.");
                 }
                 return "boolean";
             }
@@ -349,7 +388,7 @@ public class SemanticAnalyzer
                 if (!IsNumericType(leftType) || !IsNumericType(rightType))
                 {
                     _result.Errors.Add(
-                        $"Linha {binary.Line}: Operador '{binary.Operator}' requer tipos numéricos, " +
+                        $"{At(binary)}: Operador '{binary.Operator}' requer tipos numéricos, " +
                         $"encontrado '{leftType}' e '{rightType}'.");
                 }
                 return "boolean";
@@ -360,7 +399,7 @@ public class SemanticAnalyzer
                 if (leftType != "boolean" || rightType != "boolean")
                 {
                     _result.Errors.Add(
-                        $"Linha {binary.Line}: Operador '{binary.Operator}' requer tipos 'boolean', " +
+                        $"{At(binary)}: Operador '{binary.Operator}' requer tipos 'boolean', " +
                         $"encontrado '{leftType}' e '{rightType}'.");
                 }
                 return "boolean";
