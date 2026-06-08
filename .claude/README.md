@@ -42,16 +42,17 @@ and the C# version preserves output compatibility with it via
 4. Run `git log --oneline -10` for recent commits.
 5. Run `dotnet build` and `dotnet test` to confirm a clean baseline.
 
-## Current state (as of 2026-06-08, after session 004)
+## Current state (as of 2026-06-08, after session 005)
 
-| Item                                          | Status                |
-|-----------------------------------------------|-----------------------|
-| Requirement 1 — bracket balancer              | done                  |
-| Requirement 2 — structural analysis           | done                  |
-| Bonus — semantic analyzer                     | done                  |
-| Test suite                                    | 50/50 passing         |
-| Delivery doc for the professor (`ENTREGA.md`) | done at the repo root |
-| Internal documentation (`.claude/`)           | this folder           |
+| Item                                          | Status                                |
+|-----------------------------------------------|---------------------------------------|
+| Requirement 1 — bracket balancer              | done                                  |
+| Requirement 2 — structural analysis           | done                                  |
+| Bonus — semantic analyzer                     | done                                  |
+| Test suite                                    | 50/50 passing                         |
+| Delivery doc for the professor (`ENTREGA.md`) | done at the repo root, in English     |
+| GitHub-facing `README.md`                     | done at the repo root                 |
+| Internal documentation (`.claude/`)           | this folder, fully in American English |
 
 ## Conventions
 

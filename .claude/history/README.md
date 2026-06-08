@@ -22,3 +22,4 @@ sessions can pick up without reading old chat transcripts.
 | 002 | [Balanceador implementation (req. 1)](002-balanceador-implementation.md) | 2026-06-08 |
 | 003 | [Parser and semantic quality improvements](003-quality-improvements.md)  | 2026-06-08 |
 | 004 | [Documentation organization](004-documentation-organization.md)   | 2026-06-08 |
+| 005 | [Full English pass and root README](005-full-english-pass-and-root-readme.md) | 2026-06-08 |
