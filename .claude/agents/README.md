@@ -1,55 +1,68 @@
-# Agents do CSharpEditor
+# CSharpEditor Agents
 
-Agents especializados para o trabalho acadêmico de **Compiladores** (UNIFACVEST 2026/1).
+Nine specialized agent personas for the Compilers coursework project at
+UNIFACVEST (semester 2026/1). Inspired by the structure of
+`aiox-core/.claude/agents`, adapted to a smaller academic scope.
 
-Inspirados na estrutura do `aiox-core/.claude/agents`, mas adaptados ao escopo: editor C# que faz análise léxica, sintática (entrega 09/06) e semântica (bônus) de uma linguagem inspirada na referência Java do professor.
+## How to invoke
 
-## Como invocar
-
-No chat:
-```
-Use o agent cseditor-balanceador para criar o balanceador de chaves.
-```
-
-Ou pelo `Agent` tool com `subagent_type: cseditor-<nome>`.
-
-## Catálogo
-
-| Agent                  | Quando usar                                                       | Model  |
-|------------------------|-------------------------------------------------------------------|--------|
-| **cseditor-architect** | Planejar entregas, análise de impacto, coordenar os demais        | opus   |
-| **cseditor-balanceador** | Criar/manter o balanceador `( [ { } ] )` — requisito do trabalho | sonnet |
-| **cseditor-syntax**    | Mexer no `Parser.cs`, melhorar mensagens sintáticas               | sonnet |
-| **cseditor-estruturas** | Validar if/for/while/switch/class — "análise das estruturas"     | sonnet |
-| **cseditor-lexer**     | Mexer no tokenizador e formato legacy                              | sonnet |
-| **cseditor-semantica** | Mexer no `SemanticAnalyzer.cs` (bônus)                            | sonnet |
-| **cseditor-qa**        | Criar/rodar testes (`dotnet test`)                                 | sonnet |
-| **cseditor-ui**        | Botões, atalhos, painel de saída no WPF                            | sonnet |
-| **cseditor-prof-ref**  | Manter paridade com o Java do professor                            | sonnet |
-
-## Fluxo recomendado para a entrega 09/06
+In chat:
 
 ```
-cseditor-architect  → planeja
-   ↓
-cseditor-balanceador → cria Balanceador.cs + testes        ← REQUISITO 1
-   ↓
-cseditor-estruturas  → revisa parser/semantic              ← REQUISITO 2
-   ↓
-cseditor-ui          → wire botão Balanceador na UI
-   ↓
-cseditor-qa          → roda dotnet test, gera relatório
-   ↓
-cseditor-prof-ref    → atualiza ENTREGA.md para o professor
+Use the cseditor-balanceador agent to add a new test.
 ```
 
-## Referência Java (gold standard)
+Or via the `Agent` tool with `subagent_type: cseditor-<name>`.
 
-`.claude/tmp/src/br/com/unifacvest/` contém:
-- `controller/Balanceador.java` — pilha de delimitadores
-- `controller/AnaliseLexica.java` — tokenizador
-- `controller/AnaliseSintatica.java` — esqueleto com `ifEstrutura()`
+**Gotcha:** custom subagent types defined here are loaded by Claude Code at
+session start. Agents created mid-session are **not** immediately available as
+`subagent_type` values for the `Agent` tool — they become invokable only after
+the next session restart. In the session where the agents were just created,
+the main loop must follow each persona's spec directly. See
+`../history/001-initial-agents-setup.md` for context.
+
+## Catalog
+
+| Agent                  | Use when                                                  | Model  |
+|------------------------|-----------------------------------------------------------|--------|
+| `cseditor-architect`   | Planning, impact analysis, coordinating the other agents  | opus   |
+| `cseditor-balanceador` | Working on the bracket balancer (requirement 1)           | sonnet |
+| `cseditor-syntax`      | Editing `Parser.cs`, improving syntax error messages      | sonnet |
+| `cseditor-estruturas`  | Validating `if`/`for`/`while`/`switch`/`class` (req. 2)   | sonnet |
+| `cseditor-lexer`       | Editing the tokenizer or the legacy lexical format        | sonnet |
+| `cseditor-semantica`   | Editing `SemanticAnalyzer.cs` (bonus feature)             | sonnet |
+| `cseditor-qa`          | Writing or running tests (`dotnet test`)                  | sonnet |
+| `cseditor-ui`          | Buttons, shortcuts, output panel in the WPF UI            | sonnet |
+| `cseditor-prof-ref`    | Keeping parity with the professor's Java reference        | sonnet |
+
+The persona files (`cseditor-*.md`) are written in Portuguese to keep the
+vocabulary aligned with the coursework. The catalog and orientation here are in
+English so any new contributor can navigate.
+
+## Recommended workflow for delivery
+
+```
+cseditor-architect    — plan
+   ↓
+cseditor-balanceador  — implements Balanceador.cs and tests           [req. 1]
+   ↓
+cseditor-estruturas   — reviews parser/semantic for all structures    [req. 2]
+   ↓
+cseditor-ui           — wires UI buttons and shortcuts
+   ↓
+cseditor-qa           — runs tests, writes report
+   ↓
+cseditor-prof-ref     — updates ENTREGA.md for the professor
+```
+
+## Reference Java
+
+`.claude/tmp/src/br/com/unifacvest/` contains the professor's implementation:
+
+- `controller/Balanceador.java` — stack-based bracket checker
+- `controller/AnaliseLexica.java` — tokenizer
+- `controller/AnaliseSintatica.java` — syntax skeleton with `ifEstrutura()`
 - `model/PalavrasReservadas.java`, `Operadores.java`, `Delimitadores.java`
 - `Principal.java`, `view/JFrameCompilador.java`
 
-Todos os agents devem comparar contra esses arquivos antes de finalizar.
+Every agent should compare against these files when finalizing work.
